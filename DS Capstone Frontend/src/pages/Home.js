@@ -4,22 +4,20 @@ import { CircularProgress } from '@material-ui/core';
 import React,{Component, Fragment} from 'react';
 import { Col, Row } from "reactstrap";
 import {Route, useLocation, BrowserRouter as Router, Routes} from 'react-router-dom';
-import SideBar from './components/SideBar';
-import './App.css'
-import Tutorial from './pages/Tutorial';
-import About from './pages/About';
-import Home from './pages/Home';
-class App extends Component {
+import SideBar from '../components/SideBar';
+import '../App.css'
+import Tutorial from './Tutorial';
+import About from './About';
+class Home extends Component {
 
 	state = {
   image_url: "",
 	uploaded_image_url: "",
 	selectedFile: null,
 	loader: false,
-	class_prediction: "",
-	isHome: true
+	class_prediction: ""
 	};
-
+	
 	onFileChange = event => {
 	
 	this.setState({ selectedFile: event.target.files[0], uploaded_image_url: URL.createObjectURL(event.target.files[0]), image_url: ""});	
@@ -73,29 +71,15 @@ onFileUpload = () => {
 };
 
 render() {
-	let path = "home";
-	let pathHome = true;
-	const getPath = () => {
-		path = window.location.href;
-		path = path.substring(path.length-4);
-		if(!path.localeCompare("home")){
-			pathHome = true;
-		}
-		else{
-			pathHome = false;
-		}
-	}
 	return (
 		<Router>
 			<SideBar/>
 			<Routes>
-				<Route path='/home' element={Home.render} />
+                <Route path='/home' element={this.render} />
 				<Route path='/tutorial' element={<Tutorial/>} />
 				<Route path='/about' element={<About/>} />
 			</Routes>
-		
-			{getPath()}
-			{pathHome && <div style={{
+			<div style={{
 					overflowY:"auto",
 					textAlign: "center",
 					backgroundImage: "url(" + "https://t3.ftcdn.net/jpg/01/83/50/32/360_F_183503230_heDoLySnwt4W968RVTJOf7LFHbkZdCHA.jpg" + ")",
@@ -106,7 +90,7 @@ render() {
 					// overflow:"hidden",
 					backgroundRepeat: 'repeat'}}>
 						<h1 style={{color: 'white'}}>
-							X-Ray Image Analysis
+							X-Ray Image Analysis  
 						</h1>
 						<div>
 							<Button variant="contained" component="label">
@@ -142,11 +126,10 @@ render() {
 					</Fragment>
 					}
 				{this.fileData()}
-				</div>}
-			{this.forceUpdate()}
+				</div>
 			</Router>
 		);
 		}
 	}
 
-export default App;
+export default Home;

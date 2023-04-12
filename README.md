@@ -22,11 +22,11 @@ ClassActivation.py contains the Class Activation Mapping implementation. The Cla
 
 ### Frontend.
 
-1. First please make sure you have nodeJS and yarn installed. Then in the terminal, go to the directory where yarn.lock and package.json are located.
+1. First please make sure you have nodeJS v14.17.0 and yarn installed. Then in the terminal, go to the directory where yarn.lock and package.json are located.
 
 2. Enter the command yarn which will install all the required dependencies.
 
-3. Now enter yarn.start.
+3. Now enter yarn start.
 
 4. The frontend server will be running in the port localhost:3000.
 
