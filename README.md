@@ -30,6 +30,12 @@ ClassActivation.py contains the Class Activation Mapping implementation. The Cla
 
 4. The frontend server will be running in the port localhost:3000.
 
+## Installing Pytest
+
+### Tests
+
+To install pytest go to terminal and enter "pip install pytest"
+
 
 ## Data.
 
