@@ -74,15 +74,22 @@ onFileUpload = () => {
 
 render() {
 	let path = "home";
-	let pathHome = true;
+	let pathHome = true, needsReload = true;
 	const getPath = () => {
 		path = window.location.href;
 		path = path.substring(path.length-4);
 		if(!path.localeCompare("home")){
 			pathHome = true;
+			if(!needsReload){
+				needsReload = true;
+			}
 		}
 		else{
 			pathHome = false;
+			if(needsReload){
+				this.forceUpdate();
+				needsReload = false;
+			}
 		}
 	}
  	return (
