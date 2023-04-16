@@ -85,7 +85,7 @@ render() {
 			pathHome = false;
 		}
 	}
-	return (
+ 	return (
 		<Router>
 			<SideBar/>
 			<Routes>
@@ -93,7 +93,7 @@ render() {
 				<Route path='/tutorial' element={<Tutorial/>} />
 				<Route path='/about' element={<About/>} />
 			</Routes>
-		
+			
 			{getPath()}
 			{pathHome && <div style={{
 					overflowY:"auto",
@@ -143,7 +143,6 @@ render() {
 					}
 				{this.fileData()}
 				</div>}
-			{this.forceUpdate()}
 			</Router>
 		);
 		}
