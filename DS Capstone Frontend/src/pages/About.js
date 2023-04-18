@@ -12,6 +12,16 @@ function About(){
             <h1 style={{color: 'white'}}>
 							About  
 						</h1>
+        <br/>
+        <p style={{color: 'white', fontSize: 27}}>
+        <b>Developed by</b>
+        </p>
+        <img src={require('./res/KFSCIS-hrz-white-gold-logo.png')} alt="example"/>
+        <br/><br/><br/>
+        <p style={{color: 'white', fontSize: 27}}>
+        <b>Powered by</b>
+        </p>
+        <img src={require('./res/logos.png')} alt="example"/>
         </div>
 }
 
