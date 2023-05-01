@@ -1,6 +1,8 @@
 # Computer Aided Diagnosis Tool: Using Class Activation on X-Ray Image Data
 
-The Densenet121.py is for the classification model implementation. The model is saved has Chnet.h5 and is available in the DS Capstone Backend.
+The Densenet121.py is for the classification model implementation. The model is saved has Chnet.h5 and is available in the DS Capstone Backend. 
+
+The cnn_xray_validation.py contains the validation model implementation. The model is saved as xray_validation.h5 and is available in the DS Capstone Backend folder.
 
 ClassActivation.py contains the Class Activation Mapping implementation. The Class activation mapping.py requires importing the Chnet.h5 as the learning model.
 
