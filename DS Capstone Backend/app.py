@@ -1,3 +1,4 @@
+#All necessary library and file imports
 import uuid
 import math
 from PIL import Image
@@ -11,14 +12,21 @@ import scipy as sc
 from matplotlib import pyplot as plt
 import jsonpickle
 
+#Initiates flask server
 app = Flask(__name__)
 CORS(app)
+
+#Defines base directory
 basedir = os.path.abspath(os.path.dirname(__file__))
+
+#Defines location of training images
 uploads_path = os.path.join(basedir, 'uploads')
+
+#Loads both prediction model and the validation model
 m = tf.keras.models.load_model("Chnet.h5")
 m2 = tf.keras.models.load_model("Xray_validation4.h5")
 
-
+#Sample GET method illustrating a class to the flask server
 @app.route('/sample', methods = ['GET', 'POST'])
 def sample():
     if(request.method == 'GET'): # i am using get you can change whatever you want
@@ -28,14 +36,21 @@ def sample():
                }]
         return jsonify({'data': data})
 
+#Actual POST method that POSTS the processed output to the flask webpage
 @app.route("/process_image", methods=["POST"])
 def process_image():
+
+    #Recieves filename based on the image uploaded by the user on the web server
     file_name = str(uuid.uuid4())
     print(file_name)
     file = request.files['myFile']
     file.save(os.path.join(uploads_path, file.filename))
+
+    #Joins file path to directory
     file_path = uploads_path + "\\" + file.filename
     file_path = str(file_path)
+
+    #Resizes image to correct dimensions to first be passed to the validation model
     single_image = cv2.imread(file_path)
     single_image = cv2.resize(single_image, (224, 224))
     single_image = cv2.cvtColor(single_image, cv2.COLOR_BGR2GRAY)
@@ -44,6 +59,8 @@ def process_image():
     img = img.reshape(1, 224, 224, 1)
     valid_pred = m2.predict(img)[0]
 
+    #Evaluates image using validation model, if x-ray moves to next, if not, POSTS
+    #JSON object to frontend
     valid_pred = normal_round(valid_pred)
     if valid_pred == 0:
         class_prediction = 'Error: Not an X-ray image'
@@ -55,6 +72,10 @@ def process_image():
         valid_classes = list({'Not Xray': 0, 'Xray' : 1})
         valid_prediction = valid_classes[valid_pred]
         print(valid_prediction)
+
+        #Resizes image to correct dimensions to be passed to the prediction model
+        #Model makes a prediction and returns a JSON object containing the name of the file
+        #and the class prediction
         img = cv2.cvtColor(single_image, cv2.COLOR_BGR2RGB)
         img = img.reshape(1,224,224,3)
         y_pred = m.predict(img)[0]
@@ -87,11 +108,12 @@ def process_image():
         data = [file_name, class_prediction]
         return jsonify({'data': data})
 
-
+#Loads image selected by user over server
 @app.route("/process_image/<file_name>", methods=["GET"])
 def get_image(file_name):
     return send_file(f"{file_name}.jpeg", mimetype='image/jpeg')
 
+#Used to predict an image is an x-ray if the accuracy is over 75%
 def normal_round(n):
     if n < 0.75:
         return math.floor(n)

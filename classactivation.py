@@ -18,26 +18,33 @@ from google.colab import drive
 drive.mount('/content/drive')
 import scipy as sc
 
+#Loads model trained in densenet121cvid.py
 m = tf.keras.models.load_model("drive/MyDrive/Chnet.h5")
 
+#Loads single x-ray image
 single_image = cv2.imread("drive/MyDrive/COVID-1.png")
 
+#Resizes images to appropriate dimensions to be passed to the model
 single_image = cv2.resize(single_image, (224, 224))
 single_image = cv2.cvtColor(single_image, cv2.COLOR_BGR2RGB)
 plt.imshow(single_image)
 plt.show()
 
+#Ouputs current image shape
 single_image.shape
 
+#Reshapes image into numpy array, which is expected by the model
 img = single_image/255
 img = np.asarray(img)
 img = img.reshape(1, 224, 224, 3)
 img.shape
 
+#Casts a prediction for the image using the model and outputs result
 y_pred = m.predict(img)[0]
 y_pred = np.argmax(y_pred)
 y_pred
 
+#List of possible diagnosis
 classes = list({'COVID': 0, 'Viral Pneumonia': 1, 'Normal': 2, 'Lung_Opacity': 3})
 classes[y_pred]
 
@@ -45,12 +52,14 @@ classes[y_pred]
 weights = m.layers[-1].get_weights()[0]
 weights
 
+#Reshapes weights to appropriate dimensions
 weights = weights.reshape(weights.shape[1], weights.shape[0])
 weights.shape
 
 weights_for_predicted_class_for_this_image = weights[y_pred]
 weights_for_predicted_class_for_this_image
 
+#Creates new convoluted layer for model
 new_model = tf.keras.models.Model(
     m.input, 
     m.get_layer('conv5_block16_concat').output
@@ -59,11 +68,13 @@ output_con_layer = new_model.predict(img)[0]
 output_con_layer.shape
 
 import scipy as sc
+#Resizes image again for convoluted layer
 resize_image = sc.ndimage.zoom(output_con_layer, (int(224/output_con_layer.shape[0]), 
                                                   int(224/output_con_layer.shape[1]), 1))
 
 weights_for_predicted_class_for_this_image.shape
 
+#Defines final test image
 final_image = np.dot(
     resize_image.reshape(resize_image.shape[0]*resize_image.shape[1], resize_image.shape[2]),
     weights_for_predicted_class_for_this_image
@@ -73,6 +84,7 @@ final_image.shape
 
 img.shape
 
+#Reshapes final image
 img_ = img.reshape(224, 224, 3)
 img_.shape
 
@@ -87,6 +99,8 @@ plt.figure(figsize = (4, 4))
 plt.imshow(single_image)
 plt.imshow(final_image, cmap='jet', alpha=0.3)
 
+#Function for creating and drawing a heatmap illustrating the important regions of analysis
+#by the model when making a prediction on an image
 def getHeatMap(image):
   single_image = cv2.imread(image)
   single_image = cv2.resize(single_image, (224, 224))

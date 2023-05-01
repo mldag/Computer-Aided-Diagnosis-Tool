@@ -24,19 +24,26 @@ from sklearn.model_selection import StratifiedKFold
 from google.colab import drive, files
 drive.mount('/content/drive')
 
+#Location of data csv
 dataset_csv = os.path.join("/content/drive/MyDrive/ImageDataframe.csv")
 
+#Location of dataset folder
 dataset_folder = os.path.join("/content/drive/MyDrive/Image_Dataset2")
 
+#Reads data from csv into dataframe
 train_data_df = pd.read_csv(dataset_csv)
 Y = train_data_df[['label']]
+
+#Adds a stratified k fold with 5 folds (k=5)
 skf = StratifiedKFold(n_splits=5, random_state=7, shuffle=True)
 
+#Defines image generator for the model
 image_data_generator = ImageDataGenerator(
     rescale = 1/255, vertical_flip= False, horizontal_flip=True, zoom_range=0.1, zca_whitening=False,
     samplewise_center=True, samplewise_std_normalization=True, validation_split= 0.25,
     rotation_range=0.2)
 
+#Function to create and design a sequential model with the following layers:
 def get_model():
   model = tf.keras.models.Sequential([
     tf.keras.layers.Conv2D(16, (3,3), activation='relu', input_shape=(224, 224, 1)),
@@ -66,13 +73,16 @@ save_dir = '/content/drive/MyDrive/Models/'
 n_sampels = 14062
 EPOCHS = 10
 
+#Loop for feeding images into the model
 for train_index, val_index in skf.split(np.zeros(n_sampels),Y):
   training_data = train_data_df.iloc[train_index]
   validate_data = train_data_df.iloc[val_index]
 
+#Feeds images from the training dataset
   training_dataset = image_data_generator.flow_from_dataframe(training_data, dataset_folder, x_col="filename", y_col="label",
                                                               target_size = (224, 224), color_mode ='grayscale', subset='training', 
-                                                              batch_size=16, class_mode='binary', shuffle=True)
+                                                             batch_size=16, class_mode='binary', shuffle=True)
+#Feeds images from the validation dataset
   valid_dataset = image_data_generator.flow_from_dataframe(validate_data, dataset_folder, x_col="filename", y_col="label",
                                                               target_size = (224, 224), color_mode ='grayscale', subset='validation', 
                                                               batch_size=16, class_mode='binary', shuffle=True)
@@ -81,6 +91,7 @@ for train_index, val_index in skf.split(np.zeros(n_sampels),Y):
 
   model = get_model()
 
+#Compiles model using the adam optimizer
   model.compile(loss='binary_crossentropy',
               optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
               metrics =  [TruePositives(name='tp'),
@@ -105,8 +116,11 @@ for train_index, val_index in skf.split(np.zeros(n_sampels),Y):
                     )
   
   HISTORY.append(history)
+
+  #Loads predefined weights
   model.load_weights(save_dir+"Xray_validation"+str(fold)+".h5")
 
+#Evaluates the model using the validity dataset and zips the results
   results = model.evaluate(valid_dataset, batch_size=16)
   results = dict(zip(model.metrics_names, results))
 
@@ -117,6 +131,8 @@ for train_index, val_index in skf.split(np.zeros(n_sampels),Y):
   tf.keras.backend.clear_session()
   fold += 1
 
+#Each of the following plots shows the change in accuracy, validity, loss, and validity loss
+#over each epoch
 plt.figure(figsize = (10, 5))
 for i in range(len(HISTORY)):
   plt.plot(HISTORY[i].history['accuracy'], label="k="+str(i+1)+" accuracy")
@@ -152,6 +168,7 @@ for i in range(len(HISTORY)):
 from google.colab import drive, files
 drive.mount('/content/drive')
 
+#Location of test set
 dataset_test_folder = os.path.join("/content/drive/MyDrive/Image_Dataset_Test")
 
 dataset_test_csv = os.path.join("/content/drive/MyDrive/ImageDataframe_test.csv")
@@ -160,15 +177,19 @@ test_dataset_csv = pd.read_csv(dataset_test_csv)
 idc_test = ImageDataGenerator(
     rescale = 1/255)
 
+#Loads newly trained model
 new_model = tf.keras.models.load_model('/content/drive/MyDrive/Models/Xray_validation4.h5')
 
+#Feeds images from the test set into the new model
 test_dataset = idc_test.flow_from_dataframe(test_dataset_csv, dataset_test_folder, x_col="filename", y_col="label",
                                                               target_size = (224, 224), color_mode ='grayscale', 
                                                               batch_size=1, class_mode='binary', shuffle=False)
-
+#Evaluates the model using the test set
 test_model = new_model.evaluate(test_dataset)
 
 import cv2
+
+#Defines two images as an x-ray and a non-xray to test validation accuracy
 mode = 1 # 1 for x-rays / 2 for non-x-rays
 if mode == 1:
   test_image = cv2.imread("drive/MyDrive/Test_Set/Xray/Xray (6).png") # Xray image example
@@ -184,6 +205,7 @@ img = np.asarray(img)
 img = img.reshape(1, 224, 224, 1)
 img.shape
 
+#Creates model prediction based on images
 y_pred = new_model.predict(img)[0]
 print(y_pred)
 if y_pred[0] >= .75:
@@ -192,6 +214,7 @@ else:
   y_pred = math.floor(y_pred[0])
 y_pred
 
+#Outputs the class prediction based on the model evaluation
 classes = list({'Not_xray': 0, 'Xray': 1})
 class_pred = classes[y_pred]
 class_pred

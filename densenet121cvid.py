@@ -7,6 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1aT-8h5rot9I-CaRl2wb8AabP6hX-lkYs
 """
 
+#Necessary libraries and packages
 import tensorflow as tf
 tf.__version__
 
@@ -22,37 +23,52 @@ from google.colab import drive
 drive.mount('/content/drive')
 from keras.metrics import TruePositives, FalsePositives, TrueNegatives, FalseNegatives, BinaryAccuracy, Precision, Recall, AUC
 
+#Location of the training dataset
 dataset_folder = os.path.join("/drive/MyDrive/COVID-19_Radiography_Dataset")
 
+#Files of project directory to be ignored during training
 files_not_important = ["COVID.metadata.xlsx", 
                        "Lung_Opacity.metadata.xlsx",
                        "Normal.metadata.xlsx",
                        "README.md.txt",
                        "Viral Pneumonia.metadata.xlsx"]
+
+#Removes metadata xlsx files that are unncessary for training
 for i in files_not_important:
   os.remove(os.path.join(dataset_folder, i))
 
 import shutil
+
+#Ignores masks directories found in training set
 files_not_important = ["COVID/masks",
                        "Viral Pneumonia/masks"]
 for i in files_not_important:
   shutil.rmtree(os.path.join(dataset_folder, i), ignore_errors=True)
 
+#Creates a dataset object and uses glob to parse the dataset to
+#include only the training folders
 datasetObject = pathlib.Path(os.path.join(dataset_folder))
 images = list(datasetObject.glob("*/*/*.*"))
 len(images)
 
+#Creates the image data generator for training
+#The image generator is used to create batches of image data using the parameters
+#indicated
 image_data_generator = ImageDataGenerator(
     rescale = 1/255, vertical_flip= False, horizontal_flip=True, zoom_range=0.1, zca_whitening=False,
     samplewise_center=True, samplewise_std_normalization=True, validation_split= 0.25,
     rotation_range=0.2)
+#Training batches
 training_dataset = image_data_generator.flow_from_directory(
     dataset_folder, target_size = (224, 224), color_mode ='rgb',subset='training', batch_size=8, shuffle=True
 )
+#Validation batches for checking model accuracy
 valid_dataset = image_data_generator.flow_from_directory(
     dataset_folder,  target_size=(224, 224), color_mode = 'rgb', subset='validation', batch_size = 8, shuffle = True
 )
 
+#Second generator using batches from the validity dataset as opposed to the original
+#data set
 image_data_generator = ImageDataGenerator(
     rescale = 0, vertical_flip= False, horizontal_flip=False, zoom_range=0, zca_whitening=False,
     samplewise_center=True, samplewise_std_normalization=True, validation_split= 0.4,
@@ -68,24 +84,33 @@ single_batch = training_dataset.next()
 images = single_batch[0]
 label = single_batch[1]
 plt.figure(figsize = (20, 10))
+
+
 for i in range(8):
   plt.subplot(2, 4, (i + 1))
   plt.imshow(images[i])
   plt.title(label[i])
 plt.show()
 
+#Outputs data classes (Normal, COVID, Pnumoneia, Lung Opacity)
 training_dataset.classes
 
+#Outputs index associated with each class
 training_dataset.class_indices
 
+#Shapes class array
 np.asarray(images[0]).shape
 
 np.unique(images[0])
 
 from keras.applications import densenet
 from keras.initializers import GlorotNormal
+
+#Defines DenseNet121 skeleton
 d = densenet.DenseNet121(weights=None, include_top = False, input_shape = (224, 224, 3))
 print(d.output_shape)
+
+#Adds desired layers and parameters to the DenseNet model
 m = tf.keras.layers.Dropout(0.7)(d.output)
 m = tf.keras.layers.GlobalAveragePooling2D()(m)                         
 m = tf.keras.layers.Dropout(0.7)(m)
@@ -93,12 +118,15 @@ m = tf.keras.layers.Dense(2, kernel_initializer=GlorotNormal(),
                           activation = 'softmax', kernel_regularizer= tf.keras.regularizers.L2(0.0001),
                           bias_regularizer= tf.keras.regularizers.L2(0.0001))(m)
 m = tf.keras.models.Model(inputs = d.input, outputs = m)
+
+#This model uses pre-determined weights found from this site
 m.load_weights("chexnet-weights/brucechou1983_CheXNet_Keras_0.3.0_weights.h5", by_name=True, skip_mismatch=True)
 for layer in m.layers[:200]:
     layer.trainable = False
 for layer in m.layers[200:]:
     layer.trainable = True
 
+#Uses the Adam optimizer to optimize learning and time efficiency in the model
 m.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = 0.0001)
           , loss = 'categorical_crossentropy', metrics =  [TruePositives(name='tp'),
                                                           FalsePositives(name='fp'),
@@ -108,8 +136,10 @@ m.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = 0.0001)
                                                           Precision(name='precision'),
                                                           Recall(name='recall')])
 
+#Outputs a summary of the model
 m.summary()
 
+#Implements early stopping to prevent overtraining the model
 ReduceLROnPlateau = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, mode = 'min',
                                                   patience= 2)
 history = m.fit(
@@ -122,6 +152,7 @@ history = m.fit(
                                                   restore_best_weights=True)]
 )
 
+#Outputs plot of image along with accuracy
 plt.figure(figsize = (10, 5))
 plt.plot(history.history['accuracy'], label="accuracy")
 plt.plot(history.history['val_accuracy'], label="val_accuracy")
@@ -132,4 +163,5 @@ plt.plot(history.history['loss'], label = "loss")
 plt.plot(history.history['val_loss'], label = "val_loss")
 plt.legend()
 
+#Evaluates model on the validation dataset
 m.evaluate(validation_dataset, batch_size = 8)
